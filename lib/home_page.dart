@@ -1,108 +1,89 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class MyHomepage extends StatefulWidget {
-  const MyHomepage({super.key});
+final randomColorProvider = Provider<Color>((ref) {
+  final random = math.Random();
+  return Color.fromRGBO(
+    random.nextInt(256),
+    random.nextInt(256),
+    random.nextInt(256),
+    1.0,
+  );
+});
 
-  @override
-  State<MyHomepage> createState() => _MyHomepageState();
-}
+final colorProvider = StateProvider<Color>((ref) => Colors.black38);
+final containerSizeProvider = StateProvider<double>((ref) => 20);
+//final containerHeightProvider = StateProvider<double>((ref) => 0.0);
+final isSwitchOnProvider = StateProvider<bool>((ref) => false);
+final backgroundProvider =
+    StateProvider<Color>((ref) => const Color.fromARGB(255, 2, 55, 81));
+final appBarColorProvider =
+    StateProvider<Color>((ref) => const Color.fromARGB(255, 1, 25, 46));
 
-class _MyHomepageState extends State<MyHomepage> {
-  double size = 20;
-  double containerHeight = 0.0;
-  bool isSwitchOn = false;
-  //0bool isSwitchOff = true;
-  Color backgroundColor = const Color.fromARGB(255, 2, 55, 81);
-  Color containerRestcolor = const Color.fromARGB(255, 235, 238, 241);
-  Color appbarColor = const Color.fromARGB(255, 1, 25, 46);
-  Color rndColors = const Color.fromARGB(255, 235, 238, 241);
-
-  late Size screenSize;
-  late double screenWidth;
-  late double screenHeight;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  void resetContainer() {
-    setState(() {
-      size = 10;
-      //rndColors = Colors.black;
-      rndColors = containerRestcolor;
-    });
-  }
-
-  void updateContainer() {
-    setState(() {
-      size = size + 28;
-      rndColors = Color((math.Random().nextDouble() * 0xFFFFFF).toInt())
-          .withOpacity(1.0);
-    });
-  }
-
-  void decreaseContainer() {
-    setState(() {
-      size = size - 8;
-      rndColors = Color((math.Random().nextDouble() * 0xFFFFFF).toInt())
-          .withOpacity(1.0);
-    });
-  }
-
+class MyHomePage extends ConsumerWidget {
+  MyHomePage({Key? key}) : super(key: key);
   final GlobalKey _containerKey = GlobalKey();
   @override
-  Widget build(BuildContext context) {
-    RenderBox? containerRenderBox =
-        _containerKey.currentContext?.findRenderObject() as RenderBox?;
-    if (containerRenderBox != null) {
-      //    double containerWidth = containerRenderBox.size.width;
-      containerHeight = containerRenderBox.size.height;
-    } else {
-      //rien a ameliorer
-      Null;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // final color = ref.watch(colorProvider);
+    final containerSize = ref.watch(containerSizeProvider);
+    final isSwitchOn = ref.watch(isSwitchOnProvider);
+    final backgroundColor = ref.watch(backgroundProvider);
+    final appbarColor = ref.watch(appBarColorProvider);
+    final containerColorProvider = StateProvider<Color>((ref) {
+      return ref.watch(randomColorProvider);
+    });
+    // var containerHeight = ref.watch(containerHeightProvider);
+    void updateContainer() {
+      ref.read(containerSizeProvider.state).state = containerSize + 10;
     }
 
-    // Accédez au contexte ici et obtenez la taille de l'écran.
-    screenSize = MediaQuery.of(context).size;
-    screenWidth = screenSize.width;
-    screenHeight = screenSize.height;
-    var screenHeightNdiaxass = screenHeight - 160;
-    if (containerHeight >= screenHeightNdiaxass) {
-      resetContainer();
+    void decreaseContainer() {
+      if (containerSize > 10) {
+        ref.read(containerSizeProvider.state).state = containerSize - 10;
+      }
+      // ref.read(containerSizeProvider.state).state = containerSize - 10;
     }
-    if (containerHeight < 10) {
-      resetContainer();
+
+    void resetContainer() {
+      ref.read(containerSizeProvider.state).state = 20;
     }
+
+    isValueTrue(bool newValue) {
+      //
+      if (newValue == true) {
+        ref.read(isSwitchOnProvider.state).state = true;
+        ref.read(appBarColorProvider.state).state = Colors.lightGreen;
+        ref.read(backgroundProvider.state).state = Colors.white38;
+      }
+
+      if (newValue == false) {
+        ref.read(isSwitchOnProvider.state).state = false;
+        ref.read(appBarColorProvider.state).state =
+            const Color.fromARGB(255, 1, 25, 46);
+        ref.read(backgroundProvider.state).state = Colors.black54;
+      }
+    }
+    //refuse fonctionner:
+    // if (containerSize < 20) {
+    //   resetContainer();
+    // }
 
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title:
-            Text("screenheight:$screenHeight,containerheight:$containerHeight"),
+        title: Text("screenheight:$screenHeight,containerSize:$containerSize"),
         centerTitle: true,
         backgroundColor: appbarColor,
         actions: [
           Switch(
               value: isSwitchOn,
               onChanged: (newValue) {
-                setState(() {
-                  isSwitchOn = newValue;
-                  if (newValue == true) {
-                    appbarColor = const Color.fromARGB(255, 1, 25, 46);
-                    containerRestcolor =
-                        const Color.fromARGB(255, 235, 238, 241);
-                    backgroundColor = const Color.fromARGB(255, 2, 55, 81);
-                    rndColors = const Color.fromARGB(255, 235, 238, 241);
-                  }
-                  if (newValue == false) {
-                    appbarColor = Colors.white24;
-                    backgroundColor = const Color.fromRGBO(236, 240, 241, 11);
-                    containerRestcolor = const Color.fromARGB(174, 0, 0, 0);
-                  }
-                });
-              }),
+                isValueTrue(newValue);
+              })
         ],
       ),
       body: Center(
@@ -112,10 +93,10 @@ class _MyHomepageState extends State<MyHomepage> {
               padding: const EdgeInsets.all(30.0),
               child: AnimatedContainer(
                 key: _containerKey,
-                height: size,
-                width: size,
-                color: rndColors,
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 250),
+                color: ref.watch(containerColorProvider),
+                height: containerSize,
+                width: containerSize,
               ),
             ),
             const Spacer(),
@@ -141,7 +122,7 @@ class _MyHomepageState extends State<MyHomepage> {
                   label: const Text('reset'),
                 ),
               ],
-            ),
+            )
           ],
         ),
       ),
